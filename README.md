@@ -8,7 +8,7 @@ The full, extended version of the paper is [available on arXiv](https://arxiv.or
 The repository implements end-to-end pipelines for three benchmark systems (`synthetic`, `mountain_car`, and `unicycle`). Each pipeline performs the same sequence of tasks:
 
 1. Construct a uniform grid over the continuous state space.
-2. Compute one-step transition relations using multiple successor-generation methods.
+2. Compute one-step transition relations using multiple successor-generation methods. (Optionally can run `_with_self_loop_removal` variants to demonstrate verified self-loop removal)
 3. Build a Kripke structure and run CTL model checking.
 4. Compare abstraction results against a fixed-grid ground-truth estimate.
 5. Produce diagnostic figures and runtime summaries.
@@ -47,6 +47,9 @@ Execute any pipeline directly:
 python abstract_synthetic.py
 python abstract_mountain_car.py
 python abstract_unicycle.py
+python abstract_synthetic_with_self_loop_removal.py
+python abstract_mountain_car_with_self_loop_removal.py
+python abstract_unicycle_with_self_loop_removal.py
 ```
 
 Each script defines an `ARGS` configuration dictionary in `__main__` for:
@@ -57,6 +60,12 @@ Each script defines an `ARGS` configuration dictionary in `__main__` for:
 - Kripke/model-checking controls
 - ground-truth evaluation controls
 - plotting controls
+
+Additional `ARGS` in the _with_self_loop_removal variants:
+
+- max steps for reachable-set propagation certificate (`[method]_self_loop_max_steps`)
+- number of samples for sample-based certificate (`[method]_sample_exit_n`)
+- max steps per sample (`[method]_sample_exit_max_steps`)
 
 Artifacts are written to `out/<system>/`, and ground-truth caches are stored in `cache/`.
 
@@ -95,6 +104,9 @@ The repository is organized into pipeline entry points, reusable helper modules,
 | `abstract_synthetic.py` | End-to-end abstraction, model-checking, and evaluation pipeline for the synthetic system. |
 | `abstract_mountain_car.py` | End-to-end pipeline for the mountain car system. |
 | `abstract_unicycle.py` | End-to-end pipeline for the unicycle system (`x`, `y`, `theta`). |
+| `abstract_synthetic_self_with_loop_removal.py` | End-to-end abstraction, model-checking, and evaluation pipeline for the synthetic system with self loop removal demonstration. |
+| `abstract_mountain_car_with_loop_removal.py` | End-to-end pipeline for the mountain car system with self loop removal demonstration. |
+| `abstract_unicycle_with_loop_removal.py` | End-to-end pipeline for the unicycle system (`x`, `y`, `theta`) with self loop removal demonstration. |
 
 ### Core Helper Modules (`helpers/`)
 
@@ -107,6 +119,8 @@ The repository is organized into pipeline entry points, reusable helper modules,
 | `helpers/log_utils.py` | Runtime measurement, stage logging, and formatted reporting utilities. |
 | `helpers/plotting.py` | Plotting utilities for 2D systems (synthetic and mountain car). |
 | `helpers/plotting_3d.py` | Plotting utilities for the unicycle state space and theta projections/slices. |
+| `helpers/self_loop.py` | Self-loop removal functions for the synthetic and mountain car cases. |
+| `helpers/self_loop_uni.py` | Self-loop removal functions for the unicycle cases. |
 
 ### System Dynamics Modules (`helpers/systems/`)
 
