@@ -107,8 +107,19 @@ def main():
     ap.add_argument("--ny", type=int, default=20)
     ap.add_argument("--nz", type=int, default=20)
     ap.add_argument("--horizon", type=int, default=100)
-    ap.add_argument("--split-budget", type=int, default=0, help="Max number of leaf splits (partition refinements).")
+    ap.add_argument(
+        "--split-budget",
+        type=int,
+        default=50,
+        help="Max number of leaf splits (partition refinements).",
+    )
     ap.add_argument("--max-iters", type=int, default=200, help="Hard cap on CEGAR iterations (safety).")
+    ap.add_argument(
+        "--progress-every",
+        type=int,
+        default=10,
+        help="Print a [PROGRESS] line every N refinement iterations (0 disables).",
+    )
     ap.add_argument("--gt-cache", type=str, default=os.path.join("cache","unicycle_cfg_e5336e8c1848.pkl"))
     ap.add_argument("--outdir", type=str, default=os.path.join("out","unicycle_cegar"))
     ap.add_argument("--verbose", action="store_true")
@@ -152,6 +163,7 @@ def main():
         horizon=args.horizon,
         split_budget=args.split_budget,
         max_iters=args.max_iters,
+        progress_every=args.progress_every,
         verbose=args.verbose,
     )
 

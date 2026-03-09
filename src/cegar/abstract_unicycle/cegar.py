@@ -183,6 +183,7 @@ def run_cegar(
     horizon: int,
     split_budget: int,
     max_iters: int,
+    progress_every: int = 0,
     verbose: bool = False,
 ) -> CegarResult:
     refined: Set[int] = set()
@@ -235,6 +236,15 @@ def run_cegar(
         # split
         absys.refine_split(refine_uid)
         refined.add(refine_uid)
+
+        if progress_every and ((it + 1) % progress_every == 0):
+            print(
+                "[PROGRESS] "
+                f"iter={it + 1}/{max_iters} "
+                f"refined={len(refined)}/{split_budget} "
+                f"leaves={len(leaves)} sat={len(sat_uids)} violating={len(violating)} "
+                f"last_refine_uid={refine_uid}"
+            )
 
         if verbose:
             print(f"[cegar] refined uid={refine_uid} ({len(refined)}/{split_budget})")

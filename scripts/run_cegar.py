@@ -422,6 +422,8 @@ def run_case_unicycle(args, logger: PipelineLogger):
         str(args.unicycle_split_budget),
         "--max-iters",
         str(args.unicycle_max_iters),
+        "--progress-every",
+        str(args.unicycle_progress_every),
         "--gt-cache",
         str(args.unicycle_gt_cache),
         "--outdir",
@@ -439,6 +441,7 @@ def run_case_unicycle(args, logger: PipelineLogger):
             ("horizon", args.unicycle_horizon),
             ("split_budget", args.unicycle_split_budget),
             ("max_iters", args.unicycle_max_iters),
+            ("progress_every", args.unicycle_progress_every),
             ("gt_cache", str(args.unicycle_gt_cache)),
         ],
     )
@@ -505,8 +508,9 @@ def parse_args(argv=None):
     p.add_argument("--unicycle-ny", type=int, default=20)
     p.add_argument("--unicycle-nz", type=int, default=20)
     p.add_argument("--unicycle-horizon", type=int, default=100)
-    p.add_argument("--unicycle-split-budget", type=int, default=0)
+    p.add_argument("--unicycle-split-budget", type=int, default=50)
     p.add_argument("--unicycle-max-iters", type=int, default=200)
+    p.add_argument("--unicycle-progress-every", type=int, default=10)
     p.add_argument(
         "--unicycle-gt-cache",
         type=str,
