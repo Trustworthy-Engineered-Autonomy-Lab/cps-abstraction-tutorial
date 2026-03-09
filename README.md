@@ -1,67 +1,114 @@
 # A Pragmatic Guide to Building Conservative Discrete Abstractions of Cyber-Physical Systems
 
-This repository provides the full code for building conservative discrete abstractions of the systems featured in the paper "A Pragmatic Guide to Building Conservative Discrete Abstractions of Cyber-Physical Systems."
-The full, extended version of the paper is [available on arXiv](https://arxiv.org/).
+This repository provides the full implementation accompanying “A Pragmatic Guide to Building Conservative Discrete Abstractions of Cyber-Physical Systems.” The extended version of the paper is [available on arXiv](https://arxiv.org/). The workflow is demonstrated on three case studies: (1) a synthetic GES system, (2) the classical Mountain Car environment, and (3) a unicycle dynamical system. To support reproducibility, the repository includes the complete experimental codebase, smoketest scripts for reproducing the paper’s results, and a Docker configuration for a portable, reproducible execution environment.
 
-## Repository Purpose
+## Project Structure
 
-The repository implements end-to-end pipelines for three benchmark systems (`synthetic`, `mountain_car`, and `unicycle`). Each pipeline performs the same sequence of tasks:
-
-1. Construct a uniform grid over the continuous state space.
-2. Compute one-step transition relations using multiple successor-generation methods. (Optionally can run `_with_self_loop_removal` variants to demonstrate verified self-loop removal)
-3. Build a Kripke structure and run CTL model checking.
-4. Compare abstraction results against a fixed-grid ground-truth estimate.
-5. Produce diagnostic figures and runtime summaries.
+```text
+.
+├── Dockerfile                  # Reproducible container environment
+├── README.md                   # Setup and usage instructions
+├── requirements.txt            # Python dependencies
+├── full-paper.pdf              # Extended version of the paper
+├── scripts/                    # Entry points for reproducing experiments
+│   ├── run_base.py             # Base abstraction pipelines
+│   ├── run_selfloop.py         # Self-loop-removal pipelines
+│   └── run_cegar.py            # CEGAR pipelines
+├── runs/                       # Default output directory
+│   ├── base/                   # Outputs from baseline runs
+│   ├── selfloop/               # Outputs from self-loop-removal runs
+│   └── cegar/                  # Outputs from CEGAR runs
+└── src/                        # Core source code
+    ├── base-pipelines/         # End-to-end base abstraction pipelines
+    ├── selfloop-pipelines/     # End-to-end self-loop-removal pipelines
+    ├── cegar/                  # CEGAR implementations
+    ├── systems/                # Case-study dynamics and parameters
+    └── utils/                  # Shared utilities for plotting, caching, etc.
+```
 
 ## Requirements and Installation
 
-### Runtime Requirements
+### Virtual environment
 
-- Python 3.x
-- `pip`
-- Python dependencies listed in `requirements.txt`
+1. **Python 3.10+**: 
+Install Python 3.10 or later from your preferred package manager or [python.org](https://www.python.org/).
 
-### Python Dependencies
+2. **Configure Environment**:
 
-- `numpy`
-- `matplotlib`
-- `torch`
-- `scipy`
-- `pyModelChecking`
-- `colorama`
-- `tabulate`
+   Create and activate a virtual environment from the repo root:
 
-### Installation
+   **Windows (PowerShell):**
+   ```powershell
+   py -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+   **macOS / Linux (bash/zsh):**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+   (Optional) Upgrade pip:
+   ```bash
+   python -m pip install --upgrade pip
+   ```
+
+3. **Python Packages**: Install the required Python packages (listed in `requirements.txt`) using pip:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Docker
+The project is configured to be deployed using Docker for ease of setup and reproducibility. Follow these steps to build and run the Docker image:
+
+1. **Build the Docker Image**:
+   Navigate to the `artifact-xyz/` directory and run the following command to build the Docker image:
+   ```bash
+   docker build -t artifact-xyz -f artifact-xyz/Dockerfile .
+   ```
+
+2. **Run the Docker Container**:
+   Once the image is built, you can run the container with:
+   ```bash
+   docker run -it artifact-xyz
+   ```
+
+3. **Access the Container**:
+   To access the container's bash shell for debugging or manual execution, use:
+   ```bash
+   docker run -it artifact-xyz /bin/bash
+   ```
+
+4. **Rebuild the Image After Changes**:
+   If you make changes to the project files or Dockerfile, rebuild the image.
 
 ## Running the Pipelines
 
-Execute any pipeline directly (power users):
+These commands run the pipeline scripts in `scripts/`:
 
-```bash
-python -u src/base-pipelines/abstract_synthetic.py
-python -u src/base-pipelines/abstract_mountain_car.py
-python -u src/base-pipelines/abstract_unicycle.py
+- build a fixed-grid abstraction for the chosen system, construct the Kripke structure, execute model checking, and then report the results for each transition building subroutine (AABB-, PT-, and sample-based):
+    ```bash
+    python -u scripts/run_base.py --case {synthetic,mountain_car,unicycle}
+    ```
 
-python -u src/selfloop-pipelines/abstract_synthetic_with_self_loop_removal.py
-python -u src/selfloop-pipelines/abstract_mountain_car_with_self_loop_removal.py
-python -u src/selfloop-pipelines/abstract_unicycle_with_self_loop_removal.py
-```
+- the same pipeline as before, but now with self-loop erasure (reach-set and sample-based) for each transition building subroutine:
+    ```bash
+    python -u scripts/run_selfloop.py --case {synthetic,mountain_car,unicycle}
+    ```
 
-### Base-pipeline dispatcher (recommended)
+- the same base pipeline, but now with CEGAR (reach-set and sample-based) for each transition building subroutine:
+    ```bash
+    python -u scripts/run_cegar.py --case synthetic
+    python -u scripts/run_cegar.py --case mountain_car --method POLY --nx 20 --ny 20
+    python -u scripts/run_cegar.py --case unicycle
+    ```
 
-For Docker and general use, prefer the dispatcher script:
+    Note: `scripts/run_cegar.py` defaults to `--method AABB` for speed. Use `--method POLY` if you specifically want the convex-hull transition builder (it can be much slower on large grids).
 
-```bash
-python -u scripts/run_base.py --case synthetic
-python -u scripts/run_base.py --case mountain_car
-python -u scripts/run_base.py --case unicycle
-```
+    Each run prints stage-wise metrics and saves `metrics.json` under `runs/cegar/<case>/` by default.
+
+<!-- ### Base-pipeline dispatcher (recommended)
 
 Each script defines an `ARGS` configuration dictionary in `__main__` for:
 
@@ -72,38 +119,17 @@ Each script defines an `ARGS` configuration dictionary in `__main__` for:
 - ground-truth evaluation controls
 - plotting controls
 
-Additional `ARGS` in the _with_self_loop_removal variants:
+Additional `ARGS` in the self-loop-removal pipelines:
 
 - max steps for reachable-set propagation certificate (`[method]_self_loop_max_steps`)
 - number of samples for sample-based certificate (`[method]_sample_exit_n`)
 - max steps per sample (`[method]_sample_exit_max_steps`)
 
-Artifacts are written to `out/<system>/`, and ground-truth caches are stored in `cache/`.
-
-### Running the CEGAR pipelines
-
-The CEGAR implementations are not as uniform as the base pipelines, so this repo provides a single docker-friendly runner:
-
-```bash
-python -u scripts/run_cegar.py --case synthetic
-python -u scripts/run_cegar.py --case mountain_car --method POLY --nx 20 --ny 20
-python -u scripts/run_cegar.py --case unicycle
-```
-
-Note: `scripts/run_cegar.py` defaults to `--method AABB` for speed. Use `--method POLY` if you specifically want the convex-hull transition builder (it can be much slower on large grids).
-
-Each run prints stage-level metrics (via `PipelineLogger`) and saves `metrics.json` under `runs/cegar/<case>/` by default.
-
-Docker example:
-
-```bash
-docker build -t cps-abstraction .
-docker run --rm -v ${PWD}/runs:/app/runs cps-abstraction python -u scripts/run_cegar.py --case synthetic
-```
+By default, the dispatchers run pipelines from the repo root so relative paths land under `runs/`. Some plotting helpers also write figures to `out/` when enabled.
 
 ## Successor (Transition) Methods
 
-The transition builders are implemented in `helpers/partitioning.py`. All methods return a transition map with the same interface:
+The transition builders are implemented in `src/utils/partitioning.py`. All methods return a transition map with the same interface:
 
 - `transition_map[i]` is a `set[int]` containing the one-step successor cell indices of source cell `i`
 
@@ -123,55 +149,5 @@ The transition builders are implemented in `helpers/partitioning.py`. All method
 
 ### `SAMPLE` (`compute_transitions_sample`)
 
-`SAMPLE` estimates successors empirically by drawing batches of states over the domain, binning sampled source and stepped destination states into grid cells, and recording observed `(source, destination)` pairs. Sampling terminates when a Good-Turing style missing-mass upper bound falls below `beta` (with confidence parameter `delta`).
+`SAMPLE` estimates successors empirically by drawing batches of states over the domain, binning sampled source and stepped destination states into grid cells, and recording observed `(source, destination)` pairs. Sampling terminates when a Good-Turing style missing-mass upper bound falls below `beta` (with confidence parameter `delta`). -->
 
-## Project Structure
-
-The repository is organized into pipeline entry points, reusable helper modules, system definitions, and generated artifacts.
-
-### Pipeline Entry Points
-
-| Path | Role |
-| --- | --- |
-| `abstract_synthetic.py` | End-to-end abstraction, model-checking, and evaluation pipeline for the synthetic system. |
-| `abstract_mountain_car.py` | End-to-end pipeline for the mountain car system. |
-| `abstract_unicycle.py` | End-to-end pipeline for the unicycle system (`x`, `y`, `theta`). |
-| `abstract_synthetic_self_with_loop_removal.py` | End-to-end abstraction, model-checking, and evaluation pipeline for the synthetic system with self loop removal demonstration. |
-| `abstract_mountain_car_with_loop_removal.py` | End-to-end pipeline for the mountain car system with self loop removal demonstration. |
-| `abstract_unicycle_with_loop_removal.py` | End-to-end pipeline for the unicycle system (`x`, `y`, `theta`) with self loop removal demonstration. |
-
-### Core Helper Modules (`helpers/`)
-
-| Path | Role |
-| --- | --- |
-| `helpers/partitioning.py` | Uniform grid construction and transition-map generation (`AABB`, `POLY`, `SAMPLE`). |
-| `helpers/math_utils.py` | Geometric and convex-hull utilities used by transition refinement and intersection tests. |
-| `helpers/model_checking_tools.py` | Kripke-structure construction, system-specific labeling, and CTL model-checking utilities. |
-| `helpers/ground_truth_cache.py` | Cache key/path construction and persistence for ground-truth evaluations. |
-| `helpers/log_utils.py` | Runtime measurement, stage logging, and formatted reporting utilities. |
-| `helpers/plotting.py` | Plotting utilities for 2D systems (synthetic and mountain car). |
-| `helpers/plotting_3d.py` | Plotting utilities for the unicycle state space and theta projections/slices. |
-| `helpers/self_loop.py` | Self-loop removal functions for the synthetic and mountain car cases. |
-| `helpers/self_loop_uni.py` | Self-loop removal functions for the unicycle cases. |
-
-### System Dynamics Modules (`helpers/systems/`)
-
-| Path | Role |
-| --- | --- |
-| `helpers/systems/synthetic.py` | Synthetic system dynamics. |
-| `helpers/systems/mountain_car.py` | Mountain car dynamics and policy-dependent stepping logic. |
-| `helpers/systems/unicycle.py` | Unicycle system dynamics. |
-| `helpers/systems/policy.pth` | Policy weights used by the mountain car system helper. |
-
-### Generated and Cached Artifacts
-
-| Path | Role |
-| --- | --- |
-| `cache/` | Cached ground-truth evaluation results reused across runs. |
-| `out/` | Generated figures and output artifacts organized by system (`synthetic`, `mountain_car`, `unicycle`). |
-
-### Environment and Dependency Files
-
-| Path | Role |
-| --- | --- |
-| `requirements.txt` | Python dependency specification for the repository. |
