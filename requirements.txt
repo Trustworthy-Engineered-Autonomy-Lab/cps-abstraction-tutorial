@@ -1,6 +1,5 @@
 numpy
 matplotlib
-torch
 scipy
 pyModelChecking
 colorama

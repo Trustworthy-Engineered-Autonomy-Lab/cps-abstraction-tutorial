@@ -41,15 +41,26 @@ pip install -r requirements.txt
 
 ## Running the Pipelines
 
-Execute any pipeline directly:
+Execute any pipeline directly (power users):
 
 ```bash
-python abstract_synthetic.py
-python abstract_mountain_car.py
-python abstract_unicycle.py
-python abstract_synthetic_with_self_loop_removal.py
-python abstract_mountain_car_with_self_loop_removal.py
-python abstract_unicycle_with_self_loop_removal.py
+python -u src/base-pipelines/abstract_synthetic.py
+python -u src/base-pipelines/abstract_mountain_car.py
+python -u src/base-pipelines/abstract_unicycle.py
+
+python -u src/selfloop-pipelines/abstract_synthetic_with_self_loop_removal.py
+python -u src/selfloop-pipelines/abstract_mountain_car_with_self_loop_removal.py
+python -u src/selfloop-pipelines/abstract_unicycle_with_self_loop_removal.py
+```
+
+### Base-pipeline dispatcher (recommended)
+
+For Docker and general use, prefer the dispatcher script:
+
+```bash
+python -u scripts/run_base.py --case synthetic
+python -u scripts/run_base.py --case mountain_car
+python -u scripts/run_base.py --case unicycle
 ```
 
 Each script defines an `ARGS` configuration dictionary in `__main__` for:
@@ -68,6 +79,27 @@ Additional `ARGS` in the _with_self_loop_removal variants:
 - max steps per sample (`[method]_sample_exit_max_steps`)
 
 Artifacts are written to `out/<system>/`, and ground-truth caches are stored in `cache/`.
+
+### Running the CEGAR pipelines
+
+The CEGAR implementations are not as uniform as the base pipelines, so this repo provides a single docker-friendly runner:
+
+```bash
+python -u scripts/run_cegar.py --case synthetic
+python -u scripts/run_cegar.py --case mountain_car --method POLY --nx 20 --ny 20
+python -u scripts/run_cegar.py --case unicycle
+```
+
+Note: `scripts/run_cegar.py` defaults to `--method AABB` for speed. Use `--method POLY` if you specifically want the convex-hull transition builder (it can be much slower on large grids).
+
+Each run prints stage-level metrics (via `PipelineLogger`) and saves `metrics.json` under `runs/cegar/<case>/` by default.
+
+Docker example:
+
+```bash
+docker build -t cps-abstraction .
+docker run --rm -v ${PWD}/runs:/app/runs cps-abstraction python -u scripts/run_cegar.py --case synthetic
+```
 
 ## Successor (Transition) Methods
 
